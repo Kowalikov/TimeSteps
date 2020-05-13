@@ -18,40 +18,32 @@ from pmdarima.arima import auto_arima
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import math
 
-aapl = yf.Ticker("AAPL")
-df = aapl.history(period="max")
-#for col in df.columns:
-#    print(col)
-#print("pierszy rząd", df.iloc[50])
-df = pd.read_csv(r'/Users/Marek/PycharmProjects/TimeSteps/data/AAPL.csv')
-#print(df.info)
-#for col in df.columns:
-#    print(col)
+def loadStockData(name="AAPL", monthMean=False):
+    #reading raw stock data and historical extraction for data frame
+    rawStockData = yf.Ticker("AAPL")
+    df = rawStockData.history(period="max")
 
+    #show samples
+    print(df.index)
+    print(df.sample(5, random_state=0))
 
-#changing the data object to datetime typef
-con=df['Name']
-df['Name']=pd.to_datetime(df['Name'])
-df.set_index('Name', inplace=True)
-print(df.index)
-print(df.sample(5, random_state=0))
-"""
-#add 3 columns with indexes of years, months and days
-df['year'] = df.index.year
-df['month'] = df.index.month
-df['day'] = df.index.day
-print(df.sample(5, random_state=0))
+    #add 3 columns with indexes of years, months and days
+    df['year'] = df.index.year
+    df['month'] = df.index.month
+    df['day'] = df.index.day
+    print(df.sample(5, random_state=0))
 
-temp=df.groupby(['Date'])['Close'].mean()
-temp.plot(figsize=(15,5), title= 'Closing Prices(Monthwise)', fontsize=14)
-plt.show()
+    #show stocks plot
+    temp=df.groupby(['Date'])['Close'].mean()
+    temp.plot(figsize=(15,5), title= 'Closing Prices(Monthwise)', fontsize=14)
+    plt.show()
 
-df.groupby('month')['Close'].mean().plot.bar()
-plt.show()
-
-test = df[250:]
-train = df[:249]
-
+    #optional month mean for analysis
+    if monthMean==True:
+        df.groupby('month')['Close'].mean().plot.bar()
+        plt.show()
+    #returning data frame with Close, Open prices with row labels ad date, and additional date columns (Year, Day, Month)
+    return df
 
 def test_stationarity(timeseries):
     # Determing rolling statistics
@@ -79,6 +71,48 @@ def test_stationarity(timeseries):
     print(output)
 
 
+
+actionsDF=loadStockData(name="AAPL")
+
+#split data for training and testing
+test = actionsDF[250:]
+train = actionsDF[:249]
+
+#stationary test: mean and standard deviation
 test_stationarity(train['Close'])
 
-"""
+#deleting the trend procedure
+train_log = np.log(train['Close'])
+test_log = np.log(test['Close'])
+moving_avg = train_log.rolling(24).mean()
+plt.plot(train_log)
+plt.plot(moving_avg, color = 'red')
+plt.show()
+train_log_moving_avg_diff = train_log - moving_avg
+#droping empty values used in mean calc
+train_log_moving_avg_diff.dropna(inplace = True), test_stationarity(train_log_moving_avg_diff)
+#differating for stablilising the values
+train_log_diff = train_log - train_log.shift(1)
+test_stationarity(train_log_diff.dropna())
+#now the time series is decomposed into trend and seasonality (periodic fluctuations)
+
+
+#make the ARIMA model for the prediction
+model = auto_arima(train_log, trace=True, error_action='ignore', suppress_warnings=True)
+model.fit(train_log)
+#make the prediction
+forecast = model.predict(n_periods=len(test))
+forecast = pd.DataFrame(forecast,index = test_log.index,columns=['Prediction'])
+#plot the predictions for validation set
+plt.plot(train_log, label='Train')
+plt.plot(test_log, label='Test')
+plt.plot(forecast, label='Prediction')
+plt.title('APPLE Stock Price Prediction')
+plt.xlabel('Time')
+plt.ylabel('Actual Stock Price')
+plt.legend(loc='upper left', fontsize=8)
+plt.show()
+
+#judge the results by RMSE
+rms = math.sqrt(mean_squared_error(test_log,forecast))
+print("RMSE: ", rms)
