@@ -20,13 +20,13 @@ import math
 
 aapl = yf.Ticker("AAPL")
 df = aapl.history(period="max")
-for col in df.columns:
-    print(col)
-print("pierszy rząd", df.iloc[50])
-#df = pd.read_csv(r'/Users/Marek/PycharmProjects/TimeSteps/data/AAPL.csv')
+#for col in df.columns:
+#    print(col)
+#print("pierszy rząd", df.iloc[50])
+df = pd.read_csv(r'/Users/Marek/PycharmProjects/TimeSteps/data/AAPL.csv')
 #print(df.info)
-for col in df.columns:
-    print(col)
+#for col in df.columns:
+#    print(col)
 
 
 #changing the data object to datetime typef
