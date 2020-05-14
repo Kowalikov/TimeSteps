@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 plt.style.use('fivethirtyeight')
 from pylab import rcParams
 rcParams['figure.figsize'] = 10, 6
-from datetime import datetime
+from pandas.core.frame import DataFrame as dataframe
+import datetime
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.arima_model import ARIMA
@@ -31,6 +32,8 @@ def loadStockData(name="AAPL", monthMean=False):
     df['year'] = df.index.year
     df['month'] = df.index.month
     df['day'] = df.index.day
+    df['date'] = df.index.date
+    df['index'] = list(range(df.index.size))
     print(df.sample(5, random_state=0))
 
     #show stocks plot
@@ -75,8 +78,26 @@ def test_stationarity(timeseries):
 actionsDF=loadStockData(name="AAPL")
 
 #split data for training and testing
-test = actionsDF[250:]
+timePeriods = (datetime.date(2000, 1, 1), datetime.date(2019, 1, 2), datetime.date(2019, 1, 2), datetime.date(2020, 1, 2)) #time range for training and for testing
+test = actionsDF
+
+a = actionsDF.loc[actionsDF['date']==timePeriods[0]]
+while a.__sizeof__() ==0:
+    startDate= datetime.date(timePeriods[0].year, timePeriods[0].month, timePeriods[0].day+1)
+    a = actionsDF.loc[actionsDF['date'] == startDate]
+
+print(a['date'])
+
 train = actionsDF[:249]
+#print("Train: \n\n", train)
+
+
+
+
+
+
+
+"""
 
 #stationary test: mean and standard deviation
 test_stationarity(train['Close'])
@@ -116,3 +137,4 @@ plt.show()
 #judge the results by RMSE
 rms = math.sqrt(mean_squared_error(test_log,forecast))
 print("RMSE: ", rms)
+"""
