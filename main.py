@@ -73,31 +73,29 @@ def test_stationarity(timeseries):
         output['critical value( % s)' % key] = values
     print(output)
 
+def timePeriodIndex(actionsDF, timePeriod):
+    startTrain = actionsDF.loc[actionsDF['date']==timePeriod]
+    i=1
+    while startTrain.__sizeof__() ==0:
+        startDate= datetime.date(timePeriod.year, timePeriod.month, timePeriod.day+i)
+        startTrain = actionsDF.loc[actionsDF['date'] == startDate]
+        i+=1
+
+    return startTrain['index'][0]
 
 
 actionsDF=loadStockData(name="AAPL")
 
 #split data for training and testing
 timePeriods = (datetime.date(2000, 1, 1), datetime.date(2019, 1, 2), datetime.date(2019, 1, 2), datetime.date(2020, 1, 2)) #time range for training and for testing
-test = actionsDF
+timePeriodsIndexes = []
+for x in range(4):
+    timePeriodsIndexes.append(timePeriodIndex(actionsDF, timePeriods[x]))
 
-a = actionsDF.loc[actionsDF['date']==timePeriods[0]]
-while a.__sizeof__() ==0:
-    startDate= datetime.date(timePeriods[0].year, timePeriods[0].month, timePeriods[0].day+1)
-    a = actionsDF.loc[actionsDF['date'] == startDate]
-
-print(a['date'])
-
-train = actionsDF[:249]
-#print("Train: \n\n", train)
+train = actionsDF[timePeriodsIndexes[0]:timePeriodsIndexes[1]]
+test = actionsDF[timePeriodsIndexes[2]:timePeriodsIndexes[3]]
 
 
-
-
-
-
-
-"""
 
 #stationary test: mean and standard deviation
 test_stationarity(train['Close'])
@@ -137,4 +135,3 @@ plt.show()
 #judge the results by RMSE
 rms = math.sqrt(mean_squared_error(test_log,forecast))
 print("RMSE: ", rms)
-"""
